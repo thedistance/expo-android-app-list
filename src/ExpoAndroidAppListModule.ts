@@ -31,10 +31,7 @@ declare class ExpoAndroidAppListModule extends NativeModule {
    * // Search for specific config files in assets directory
    * getFiles("com.example.app", ["assets/config/settings.json"])
    */
-  getFiles(
-    packageName: string,
-    paths: string[],
-  ): Promise<(FileInfo | null)[]>;
+  getFiles(packageName: string, paths: string[]): Promise<(FileInfo | null)[]>;
   /**
    * Gets the permissions of an app
    * @param packageName The package name of the app
@@ -49,4 +46,6 @@ declare class ExpoAndroidAppListModule extends NativeModule {
   getPackageDetails(packageName: string): Promise<AndroidAppListPackage | null>;
 }
 
-export default requireNativeModule("ExpoAndroidAppList") as ExpoAndroidAppListModule;
+export default requireNativeModule<ExpoAndroidAppListModule>(
+  "ExpoAndroidAppList",
+);

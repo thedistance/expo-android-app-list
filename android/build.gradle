@@ -1,7 +1,7 @@
 apply plugin: 'com.android.library'
 
 group = 'expo.modules.applist'
-version = '0.1.0'
+version = '0.2.0'
 
 def expoModulesCorePlugin = new File(project(":expo-modules-core").projectDir.absolutePath, "ExpoModulesCorePlugin.gradle")
 apply from: expoModulesCorePlugin
@@ -23,10 +23,10 @@ if (useManagedAndroidSdkVersions) {
     }
   }
   project.android {
-    compileSdkVersion safeExtGet("compileSdkVersion", 34)
+    compileSdkVersion safeExtGet("compileSdkVersion", 36)
     defaultConfig {
       minSdkVersion safeExtGet("minSdkVersion", 21)
-      targetSdkVersion safeExtGet("targetSdkVersion", 34)
+      targetSdkVersion safeExtGet("targetSdkVersion", 36)
     }
   }
 }
@@ -34,8 +34,8 @@ if (useManagedAndroidSdkVersions) {
 android {
   namespace "expo.modules.applist"
   defaultConfig {
-    versionCode 1
-    versionName "0.1.0"
+    versionCode 2
+    versionName "0.2.0"
   }
   lintOptions {
     abortOnError false
