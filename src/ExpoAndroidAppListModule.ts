@@ -34,9 +34,14 @@ declare class ExpoAndroidAppListModule extends NativeModule {
   getFiles(packageName: string, paths: string[]): Promise<(FileInfo | null)[]>;
   /**
    * Checks whether paths exist inside the app APK zips without reading file bodies.
+   * @param exactMatch When true, only exact zip entry paths match (case-insensitive), not nested suffixes.
    * @returns Booleans in the same order as paths
    */
-  hasZipEntries(packageName: string, paths: string[]): Promise<boolean[]>;
+  hasZipEntries(
+    packageName: string,
+    paths: string[],
+    exactMatch?: boolean,
+  ): Promise<boolean[]>;
   /**
    * Gets the permissions of an app
    * @param packageName The package name of the app

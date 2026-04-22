@@ -133,13 +133,13 @@ class ExpoAndroidAppListModule : Module() {
             }
         }
 
-        AsyncFunction("hasZipEntries") { packageName: String, paths: List<String>, promise: Promise ->
+        AsyncFunction("hasZipEntries") { packageName: String, paths: List<String>, exactMatch: Boolean?, promise: Promise ->
             try {
                 val utils = ensurePackageUtilities(promise) ?: return@AsyncFunction
 
                 CoroutineScope(Dispatchers.Default).launch {
                     try {
-                        val exists = utils.hasZipEntries(packageName, paths)
+                        val exists = utils.hasZipEntries(packageName, paths, exactMatch == true)
                         promise.resolve(exists as List<Any?>)
                     } catch (e: Exception) {
                         promise.reject("ERROR", e.message, e)

@@ -179,7 +179,15 @@ class PackageUtilities(
      * Presence-only check for paths inside base and split APK zips (no file body read).
      * Result order matches [paths].
      */
-    suspend fun hasZipEntries(packageName: String, paths: List<String>): List<Boolean> =
+    /**
+     * @param exactMatch When true, only full-entry path matches count (case-insensitive).
+     *                    Avoids false Cordova/Capacitor hits on nested paths like `node_modules/.../capacitor.config.json`.
+     */
+    suspend fun hasZipEntries(
+        packageName: String,
+        paths: List<String>,
+        exactMatch: Boolean = false
+    ): List<Boolean> =
         withContext(Dispatchers.IO) {
             try {
                 val packageInfo = getCachedPackageInfo(packageName) ?: return@withContext paths.map { false }
@@ -188,12 +196,15 @@ class PackageUtilities(
                 val found = paths.associateWith { false }.toMutableMap()
 
                 fun markEntry(entryPath: String) {
-                    val entryLower = entryPath.lowercase(Locale.US)
+                    val entryNorm = entryPath.lowercase(Locale.US).trim().trimStart('/')
                     for (path in paths) {
-                        val pathLower = path.lowercase(Locale.US)
-                        if (entryLower == pathLower || entryLower.endsWith("/$pathLower")) {
-                            found[path] = true
+                        val pathNorm = path.lowercase(Locale.US).trim().trimStart('/')
+                        val matched = if (exactMatch) {
+                            entryNorm == pathNorm
+                        } else {
+                            entryNorm == pathNorm || entryNorm.endsWith("/$pathNorm")
                         }
+                        if (matched) found[path] = true
                     }
                 }
 
