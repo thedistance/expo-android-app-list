@@ -2,8 +2,6 @@
 
 Expo native module for **Android** that reads metadata about **other installed apps** (package list, icons, permissions, JNI `.so` names, and selective files inside APK zips).
 
-In this repo it lives as a **local fork** (`android-app-list/`) and is consumed by [`react-raptor`](../react-raptor) via `"expo-android-app-list": "file:../android-app-list"` so native and TypeScript changes stay in sync.
-
 ## Features
 
 - **`getAll()`** — non-system packages the host app can see (with package visibility in mind).
@@ -18,19 +16,11 @@ In this repo it lives as a **local fork** (`android-app-list/`) and is consumed 
 
 ## Installation
 
-**Published package (external apps):**
-
 ```sh
 npx expo install expo-android-app-list
 ```
 
-**This monorepo (`react-raptor`):**
-
-```json
-"expo-android-app-list": "file:../android-app-list"
-```
-
-Run `npm install` from `react-raptor`; `postinstall` can build the module if `build/` is missing.
+Then rebuild your development client after native changes (`npx expo run:android`).
 
 ## Android configuration
 
@@ -38,7 +28,7 @@ Run `npm install` from `react-raptor`; `postinstall` can build the module if `bu
 
 The module’s `AndroidManifest` declares **`android.permission.QUERY_ALL_PACKAGES`**. That broadens which installed packages are returned on recent Android versions.
 
-It is **sensitive for Play Console**: you must declare a valid use and may need to justify it. For store builds that must avoid it, fork the module and remove the permission (expect **reduced** visibility of other apps).
+It is **sensitive for Play Console**: you must declare a valid use and may need to justify it. For store builds that must avoid it, maintain a variant of the module without this permission (expect **reduced** visibility of other apps).
 
 ### Host `queries` (recommended)
 
@@ -110,9 +100,9 @@ const icon = await ExpoAndroidAppList.getAppIcon("com.example.app", 256);
 const permissions = await ExpoAndroidAppList.getPermissions("com.example.app");
 ```
 
-## Used by React Raptor
+## Example consumer
 
-[React Raptor](../react-raptor) uses this module to scan the device and **classify** apps (React Native / Expo, Flutter, WebAPK PWAs, Cordova, etc.). Classification logic lives in the app; this module provides **I/O** only.
+[React Raptor](https://play.google.com/store/apps/details?id=com.leonhh.reactraptor) uses this module to scan the device and **classify** apps (React Native / Expo, Flutter, WebAPK PWAs, Cordova, etc.). Classification logic lives in the consumer app; this module provides **I/O** only.
 
 ## License
 
@@ -120,4 +110,4 @@ MIT
 
 ## Contributing
 
-Contributions are welcome; open a PR against the upstream project or this monorepo fork as appropriate.
+Pull requests are welcome.
