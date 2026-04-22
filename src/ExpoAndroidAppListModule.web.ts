@@ -11,6 +11,9 @@ export default {
   getFiles: async (packageName: string, paths: string[]) => {
     return [];
   },
+  hasZipEntries: async (packageName: string, paths: string[]) => {
+    return paths.map(() => false);
+  },
   getPermissions: async (packageName: string) => {
     return [];
   },

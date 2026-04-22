@@ -174,6 +174,51 @@ class PackageUtilities(
             }
         }
 
+    /**
+     * Presence-only check for paths inside base and split APK zips (no file body read).
+     * Result order matches [paths].
+     */
+    suspend fun hasZipEntries(packageName: String, paths: List<String>): List<Boolean> =
+        withContext(Dispatchers.IO) {
+            try {
+                val packageInfo = getCachedPackageInfo(packageName) ?: return@withContext paths.map { false }
+                val appInfo = packageInfo.applicationInfo ?: return@withContext paths.map { false }
+
+                val found = paths.associateWith { false }.toMutableMap()
+
+                fun markEntry(entryPath: String) {
+                    for (path in paths) {
+                        if (entryPath == path || entryPath.endsWith("/$path")) {
+                            found[path] = true
+                        }
+                    }
+                }
+
+                ZipFile(appInfo.sourceDir).use { zip ->
+                    zip.entries().asSequence()
+                        .filter { entry -> !entry.isDirectory }
+                        .forEach { entry -> markEntry(entry.name) }
+                }
+
+                appInfo.splitSourceDirs?.forEach { splitSourceDir ->
+                    try {
+                        ZipFile(splitSourceDir).use { zip ->
+                            zip.entries().asSequence()
+                                .filter { entry -> !entry.isDirectory }
+                                .forEach { entry -> markEntry(entry.name) }
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Failed to scan split APK $splitSourceDir: ${e.message}")
+                    }
+                }
+
+                paths.map { path -> found[path] == true }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error checking zip entries for $packageName", e)
+                paths.map { false }
+            }
+        }
+
     private suspend fun getCachedPackageInfo(packageName: String): PackageInfo? =
         withContext(Dispatchers.Default) {
             packageInfoCache[packageName] ?: getPackageInfo(packageName)
