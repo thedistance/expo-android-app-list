@@ -15,6 +15,7 @@ import android.util.Log
 import kotlinx.coroutines.*
 import java.io.InputStreamReader
 import java.util.concurrent.ConcurrentHashMap
+import java.util.Locale
 
 import expo.modules.androidapplist.models.PackageDetails
 import expo.modules.androidapplist.models.FileInfo
@@ -187,8 +188,10 @@ class PackageUtilities(
                 val found = paths.associateWith { false }.toMutableMap()
 
                 fun markEntry(entryPath: String) {
+                    val entryLower = entryPath.lowercase(Locale.US)
                     for (path in paths) {
-                        if (entryPath == path || entryPath.endsWith("/$path")) {
+                        val pathLower = path.lowercase(Locale.US)
+                        if (entryLower == pathLower || entryLower.endsWith("/$pathLower")) {
                             found[path] = true
                         }
                     }
@@ -363,7 +366,7 @@ class PackageUtilities(
                             .maxDepth(5)
                             .filter { it.isFile && it.extension == "so" }
                             .forEach { file ->
-                                nativeLibs.add(file.name)
+                                nativeLibs.add(file.name.trim())
                             }
                     }
                 } catch (e: Exception) {
@@ -379,7 +382,7 @@ class PackageUtilities(
                                     architectures.any { arch -> entry.name.contains("lib/$arch/") }
                         }
                         .forEach { entry ->
-                            val libName = entry.name.split("/").last()
+                            val libName = entry.name.split("/").last().trim()
                             nativeLibs.add(libName)
                         }
                 }
@@ -396,7 +399,7 @@ class PackageUtilities(
                                         architectures.any { arch -> entry.name.contains("lib/$arch/") }
                             }
                             .forEach { entry ->
-                                val libName = entry.name.split("/").last()
+                                val libName = entry.name.split("/").last().trim()
                                 nativeLibs.add(libName)
                             }
                     }
