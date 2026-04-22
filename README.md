@@ -1,125 +1,118 @@
-# ExpoAndroidAppList
+# expo-android-app-list
 
-expo-android-app-list is an Expo module that allows you to retrieve information about installed applications on Android devices.
+Expo native module for **Android** that reads metadata about **other installed apps** (package list, icons, permissions, JNI `.so` names, and selective files inside APK zips).
+
+In this repo it lives as a **local fork** (`android-app-list/`) and is consumed by [`react-raptor`](../react-raptor) via `"expo-android-app-list": "file:../android-app-list"` so native and TypeScript changes stay in sync.
 
 ## Features
 
-- Get a list of all installed applications on an Android device
-- Retrieve package names, app names, and installation details
+- **`getAll()`** — non-system packages the host app can see (with package visibility in mind).
+- **`getPackageDetails(packageName)`** — name, version, size, install times, target SDK, system flag.
+- **`getNativeLibraries(packageName)`** — distinct `.so` basenames from `nativeLibraryDir`, related paths, and **base + split APK** zip scans (no arbitrary cap on `.so` entries).
+- **`getAppIcon(packageName, maxSize?)`** — base64 PNG.
+- **`getPermissions(packageName)`** — `requestedPermissions` from `PackageInfo`.
+- **`getFiles(packageName, paths[])`** — read small text files from APK zips by path (e.g. `assets/app.config`).
+- **`hasZipEntries(packageName, paths[], exactMatch?)`** — booleans in path order; checks **base + split** APK zips.  
+  - **`exactMatch === true`** — only a **full** zip entry path match (case-insensitive). Use this for Cordova/Capacitor/RN/Expo asset probes so nested paths like `node_modules/.../capacitor.config.json` do not match.  
+  - **`exactMatch` omitted or `false`** — also matches entries whose path **ends with** `/<path>` (useful for .NET assembly paths under `assemblies/`).
 
 ## Installation
+
+**Published package (external apps):**
 
 ```sh
 npx expo install expo-android-app-list
 ```
 
-## Configuration
+**This monorepo (`react-raptor`):**
 
-This package requires the `QUERY_ALL_PACKAGES` permission to function. The permission is included in the code of `expo-android-app-list`.
+```json
+"expo-android-app-list": "file:../android-app-list"
+```
 
-⚠️ **Important Note**: The `QUERY_ALL_PACKAGES` permission is considered sensitive. If you plan to publish your app on the Google Play Store, you may need to justify the use of this permission in your Google Play Store listing.
+Run `npm install` from `react-raptor`; `postinstall` can build the module if `build/` is missing.
 
-## Usage
+## Android configuration
 
-### getAll
+### `QUERY_ALL_PACKAGES`
 
-The `getAll()` method returns an array of objects containing information about each installed application:
+The module’s `AndroidManifest` declares **`android.permission.QUERY_ALL_PACKAGES`**. That broadens which installed packages are returned on recent Android versions.
+
+It is **sensitive for Play Console**: you must declare a valid use and may need to justify it. For store builds that must avoid it, fork the module and remove the permission (expect **reduced** visibility of other apps).
+
+### Host `queries` (recommended)
+
+The consuming app should still declare `<queries>` intents (e.g. `MAIN`, `https` `VIEW`) so **normal** package visibility works together with your use case.
+
+## API examples
+
+### `getAll`
 
 ```typescript
 import { ExpoAndroidAppList } from "expo-android-app-list";
 
 const apps = await ExpoAndroidAppList.getAll();
+// AndroidAppListPackage[]
 ```
 
-```javascript
-[
-  {
-    packageName: "com.example.app",
-    appName: "Example App",
-    versionName: "1.0.0",
-    versionCode: 1,
-    firstInstallTime: 1234567890,
-    lastUpdateTime: 1234567890,
-  },
-  // ...
-];
-```
+Each item includes: `packageName`, `appName`, `versionName`, `size`, `isSystemApp`, `firstInstallTime`, `lastUpdateTime`, `targetSdkVersion`.
 
-### getPackageDetails
-
-The `getPackageDetails()` method returns the details of an installed application.
+### `getPackageDetails`
 
 ```typescript
-import { ExpoAndroidAppList } from "expo-android-app-list";
-
-const apps = await ExpoAndroidAppList.getPackageDetails("com.example.app");
+const details = await ExpoAndroidAppList.getPackageDetails("com.example.app");
+// AndroidAppListPackage | null
 ```
 
-```javascript
-{
-  packageName: "com.example.app",
-  appName: "Example App",
-  versionName: "1.0.0",
-  versionCode: 1,
-  firstInstallTime: 1234567890,
-  lastUpdateTime: 1234567890,
-},
-```
-
-### getAppIcon
-
-To display app icons, you can use the `getAppIcon()` method along with expo-image. This methods is async because we need to convert a drawable to PNG.
+### `getNativeLibraries`
 
 ```typescript
-import { ExpoAndroidAppList } from 'expo-android-app-list';
-import { Image } from 'expo-image';
+const libs = await ExpoAndroidAppList.getNativeLibraries("com.example.app");
+// string[] — .so basenames, e.g. "libreactnative.so"
+```
 
-const icon = await ExpoAndroidAppList.getAppIcon("com.example.app", 100);
+### `hasZipEntries`
 
+```typescript
+// Exact: only "assets/app.config" at zip root (case-insensitive)
+const [hasConfig] = await ExpoAndroidAppList.hasZipEntries(
+  "com.example.app",
+  ["assets/app.config"],
+  true,
+);
+
+// Relaxed: entry may end with "/assemblies/Microsoft.Maui.Controls.dll"
+const hits = await ExpoAndroidAppList.hasZipEntries("com.example.app", probePaths, false);
+```
+
+### `getFiles`
+
+```typescript
+const files = await ExpoAndroidAppList.getFiles("com.example.app", ["assets/app.config"]);
+const raw = files[0]?.content;
+```
+
+### `getAppIcon`
+
+```typescript
+import { Image } from "expo-image";
+
+const icon = await ExpoAndroidAppList.getAppIcon("com.example.app", 256);
 <Image
-  source={{
-    cacheKey: "com.example.app",
-    uri: `data:image/png;base64,${icon}`,
-  }}
-  style={{ width: 100, height: 100 }}
-/>
+  source={{ uri: `data:image/png;base64,${icon}` }}
+  style={{ width: 64, height: 64 }}
+/>;
 ```
 
-### getNativeLibraries
-
-The `getNativeLibraries()` method allows you to retrieve a list of native libraries (.so files) used by an Android application:
-
-```typescript
-const libraries =
-  await ExpoAndroidAppList.getNativeLibraries("com.example.app");
-```
-
-### getFiles
-
-The `getFiles()` method allows you to search for and read files which might be included in the APK:
-
-```typescript
-// Search for specific files
-const files = await ExpoAndroidAppList.getFiles("com.example.app", [
-  "config.json",
-]);
-
-const config = files?.[0].content;
-```
-
-### getPermissions
-
-The `getPermissions()` method retrieves all permissions that an app can request:
+### `getPermissions`
 
 ```typescript
 const permissions = await ExpoAndroidAppList.getPermissions("com.example.app");
-
-const hasCameraPermission = permissions.includes("android.permission.CAMERA");
 ```
 
-## ExpoAndroidAppList powers ReactRaptor
+## Used by React Raptor
 
-This package powers [ReactRaptor](https://play.google.com/store/apps/details?id=com.leonhh.reactraptor), an app for React Native developers that helps discover which Android apps are built with React Native. ReactRaptor uses ExpoAndroidAppList to scan installed applications and identify React Native-based apps.
+[React Raptor](../react-raptor) uses this module to scan the device and **classify** apps (React Native / Expo, Flutter, WebAPK PWAs, Cordova, etc.). Classification logic lives in the app; this module provides **I/O** only.
 
 ## License
 
@@ -127,4 +120,4 @@ MIT
 
 ## Contributing
 
-Contributions are welcome! Feel free to submit a Pull Request.
+Contributions are welcome; open a PR against the upstream project or this monorepo fork as appropriate.
