@@ -378,7 +378,6 @@ class PackageUtilities(
                             entry.name.endsWith(".so") &&
                                     architectures.any { arch -> entry.name.contains("lib/$arch/") }
                         }
-                        .take(1000)
                         .forEach { entry ->
                             val libName = entry.name.split("/").last()
                             nativeLibs.add(libName)
@@ -396,7 +395,6 @@ class PackageUtilities(
                                 entry.name.endsWith(".so") &&
                                         architectures.any { arch -> entry.name.contains("lib/$arch/") }
                             }
-                            .take(1000)
                             .forEach { entry ->
                                 val libName = entry.name.split("/").last()
                                 nativeLibs.add(libName)
